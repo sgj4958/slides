@@ -139,7 +139,7 @@
 
     setArrowDisplay()
 
-    const transitionModify = (type) => slideWrap.classList[type ? "remove" : "add"]("zeroTran")
+    const transitionEnable = (type) => slideWrap.classList[type ? "remove" : "add"]("zeroTran")
     const slideMove = (left = false) => {
         const nowLeft = getNowLeft()
         const nowLeftCorrection = Math.round(nowLeft / slideWidth) * slideWidth
@@ -149,24 +149,28 @@
         else if(!left && nowLeft >= minSlideWidth) setLeft(minSlideWidth) // 왼쪽 끝
     }
 
+    const setLeftCorrection = () => setLeft(Math.round(getNowLeft() / slideWidth) * slideWidth)
+
     let isNowMoving = false
     document.querySelectorAll("#slider .arrow").forEach(element => {
         element.addEventListener("click", () => {
             if(isNowMoving) return
             isNowMoving = true
+            transitionEnable(true)
             slideMove(element.id == "right")
+            
+            // setLeftCorrection() // 화살표로 슬라이드 넘길 시 가끔 애매한 구역에 멈추는 경우 발생함.
         })
         
         slideWrap.addEventListener("transitionend", () => {
-            
             if(infiniteSlide) {
                 const nowLeft = getNowLeft()
                 const normalFirstSlideLeft = minSlideWidth - slideWidth
                 const normalLastSlideLeft = maxSlideWidth + slideWidth
-                transitionModify(true)
+                transitionEnable(true)
                 if(nowLeft == maxSlideWidth) setLeft(normalFirstSlideLeft)
                 else if(nowLeft == minSlideWidth) setLeft(normalLastSlideLeft)
-                transitionModify(false)
+                transitionEnable(false)
             }
 
             setArrowDisplay()
@@ -177,13 +181,13 @@
     slider.addEventListener("mousedown", (e) => {
         const nowLeft = getNowLeft()
         slider.style.cursor = "grabbing";
-        transitionModify(false)
+        transitionEnable(false)
 
         const mouseMoveEvent = event => setLeft(nowLeft - (e.x - event.x))
         document.addEventListener("mousemove", mouseMoveEvent);
 
         document.addEventListener("mouseup", (event) => {
-            transitionModify(true)
+            transitionEnable(true)
             const mouseMoveValueCorrection = 100
             const mouseMoveValue = e.x - event.x
 
@@ -195,5 +199,8 @@
             document.removeEventListener("mousemove", mouseMoveEvent)
         })
     })
+    
+    const autoSlide = true
+    if(autoSlide) setInterval(() => document.querySelector("#slider .arrow#right").click(), 2000)
 </script>
 </html>
