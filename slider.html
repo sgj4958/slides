@@ -25,68 +25,81 @@
             align-items: center;
             height: 100vh;
         }
-        #slideWrap {
-            position: relative;
-            transition: .5s;
-            display: flex;
-            left: 0;
-        }
-        #slideWrap .slide {
-            width: 400px;
-            height: 150px;
-        }
         #slider {
             width: 400px;
             overflow: hidden;
             position: relative;
             display: flex;
             align-items: center;
+            cursor: grab;
         }
-        #slider ul {
+        #slider #slideWrap {
             list-style: none;
+            position: relative;
+            transition: .5s;
+            display: flex;
         }
-        .arrow {
+        #slider #slideWrap.zeroTran {
+            transition: none !important;
+        }
+        #slider #slideWrap .slide {
+            width: 400px;
+            height: 150px;
+            
+            flex-shrink: 0;
+
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        #slider .arrow {
             position: absolute;
             z-index: 1;
             cursor: pointer;
             color: #fff;
         }
-        #left {
+        #slider #left {
             left: 5px;
             transform: rotate(270deg);
         }
-        #right {
+        #slider #right {
             right: 5px;
             transform: rotate(90deg);
         }
-        .arrow.hide {
+        #slider .arrow.hide {
             display: none;
         }
-        #slideWrap .slide:nth-child(1) {
+        #slider #slideWrap .slide:nth-child(1) {
             background: red;
         }
-        #slideWrap .slide:nth-child(2) {
+        #slider #slideWrap .slide:nth-child(2) {
             background: orange;
         }
-        #slideWrap .slide:nth-child(3) {
+        #slider #slideWrap .slide:nth-child(3) {
             background: yellow;
         }
-        #slideWrap .slide:nth-child(4) {
+        #slider #slideWrap .slide:nth-child(4) {
             background: green;
         }
-        #slideWrap .slide:nth-child(5) {
+        #slider #slideWrap .slide:nth-child(5) {
             background: blue;
+        }
+        #slider #slideWrap .slide:nth-child(6) {
+            background: navy;
+        }
+        #slider #slideWrap .slide:nth-child(7) {
+            background: purple;
         }
     </style>
 </head>
 <body>
     <div id="slider">
-        <ul id="slideWrap">
-            <li class="slide"></li>
-            <li class="slide"></li>
-            <li class="slide"></li>
-            <li class="slide"></li>
-            <li class="slide"></li>
+        <ul id="slideWrap" style="left: 0;">
+            <li class="slide">1</li>
+            <li class="slide">2</li>
+            <li class="slide">3</li>
+            <li class="slide">4</li>
+            <li class="slide">5</li>
         </ul>
         <i id="left" class="arrow">
             <span class="material-symbols-outlined">shift_lock</span>
@@ -97,38 +110,89 @@
     </div>
 </body>
 <script>
-    const slideWidth = parseInt(getComputedStyle(document.querySelector("#slider .slide")).width)
-    const slideLength = document.querySelectorAll("#slider .slide").length
     const slideWrap = document.querySelector("#slider #slideWrap")
-    const maxSlideWidth = slideWidth * (slideLength - 1) * -1
+    const setLeft = left => slideWrap.style.left = left + "px"
+    const slideWidth = parseInt(getComputedStyle(document.querySelector("#slider .slide")).width)
+
+    const infiniteSlide = true
+    if(infiniteSlide) {
+        const firstSlide = document.querySelector("#slider #slideWrap .slide").cloneNode(true)
+        const lastSlide = document.querySelector("#slider #slideWrap .slide:last-child").cloneNode(true)
+        document.querySelector("#slider #slideWrap").insertAdjacentElement("beforeend", firstSlide)
+        document.querySelector("#slider #slideWrap").insertAdjacentElement("afterbegin", lastSlide)
+        setLeft(-slideWidth)
+    }
+
+    const slideLength = document.querySelectorAll("#slider .slide").length
+    const maxSlideWidth = -slideWidth * (slideLength - 1)
     const minSlideWidth = 0
     
+    const getNowLeft = () => parseInt(getComputedStyle(slideWrap).left)
+
     const setArrowDisplay = () => {
-        const nowLeft = parseInt(getComputedStyle(slideWrap).left)
-        document.querySelectorAll(".arrow").forEach(element => element.classList.remove("hide"))
-        if(nowLeft == maxSlideWidth) document.querySelector(".arrow#left").classList.add("hide")
-        if(nowLeft == minSlideWidth) document.querySelector(".arrow#right").classList.add("hide")
+        if(infiniteSlide) return
+        const nowLeft = getNowLeft()
+        document.querySelectorAll("#slider .arrow").forEach(element => element.classList.remove("hide"))
+        if(nowLeft == maxSlideWidth) document.querySelector("#slider .arrow#right").classList.add("hide")
+        if(nowLeft == minSlideWidth) document.querySelector("#slider .arrow#left").classList.add("hide")
     }
 
     setArrowDisplay()
 
-    let isAnimationing = false
-    document.querySelectorAll(".arrow").forEach(element => {
+    const transitionModify = (type) => slideWrap.classList[type ? "remove" : "add"]("zeroTran")
+    const slideMove = (left = false) => {
+        const nowLeft = getNowLeft()
+        const nowLeftCorrection = Math.round(nowLeft / slideWidth) * slideWidth
+
+        setLeft(nowLeftCorrection + parseInt(`${left ? `-` : `+`}${slideWidth}`))
+        if(left && nowLeft <= maxSlideWidth) setLeft(maxSlideWidth) // 오른쪽 끝
+        else if(!left && nowLeft >= minSlideWidth) setLeft(minSlideWidth) // 왼쪽 끝
+    }
+
+    let isNowMoving = false
+    document.querySelectorAll("#slider .arrow").forEach(element => {
         element.addEventListener("click", () => {
-            if(isAnimationing) return
-            const nowLeft = parseInt(getComputedStyle(slideWrap).left)
-            const leftArrow = element.id == "left"
-
-            if(leftArrow && nowLeft <= maxSlideWidth) return alert("오른쪽 끝")
-            if(!leftArrow && nowLeft >= 0) return alert("왼쪽 끝")
-
-            isAnimationing = true
-            slideWrap.style.left = nowLeft + parseInt(`${leftArrow ? `-` : `+`}${slideWidth}`) + "px"
+            if(isNowMoving) return
+            isNowMoving = true
+            slideMove(element.id == "right")
+        })
         
-            slideWrap.addEventListener("transitionend", () => {
-                isAnimationing = false
-                setArrowDisplay()
-            })
+        slideWrap.addEventListener("transitionend", () => {
+            
+            if(infiniteSlide) {
+                const nowLeft = getNowLeft()
+                const normalFirstSlideLeft = minSlideWidth - slideWidth
+                const normalLastSlideLeft = maxSlideWidth + slideWidth
+                transitionModify(true)
+                if(nowLeft == maxSlideWidth) setLeft(normalFirstSlideLeft)
+                else if(nowLeft == minSlideWidth) setLeft(normalLastSlideLeft)
+                transitionModify(false)
+            }
+
+            setArrowDisplay()
+            isNowMoving = false
+        })
+    })
+
+    slider.addEventListener("mousedown", (e) => {
+        const nowLeft = getNowLeft()
+        slider.style.cursor = "grabbing";
+        transitionModify(false)
+
+        const mouseMoveEvent = event => setLeft(nowLeft - (e.x - event.x))
+        document.addEventListener("mousemove", mouseMoveEvent);
+
+        document.addEventListener("mouseup", (event) => {
+            transitionModify(true)
+            const mouseMoveValueCorrection = 100
+            const mouseMoveValue = e.x - event.x
+
+            setLeft(nowLeft)
+            if(Math.abs(mouseMoveValue) > mouseMoveValueCorrection) slideMove(mouseMoveValue > 0)
+
+            slider.style.cursor = "grab";
+
+            document.removeEventListener("mousemove", mouseMoveEvent)
         })
     })
 </script>
