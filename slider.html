@@ -39,7 +39,7 @@
             transition: .5s;
             display: flex;
         }
-        #slider #slideWrap.zeroTran {
+        #slider #slideWrap.disableTransition {
             transition: none !important;
         }
         #slider #slideWrap .slide {
@@ -68,6 +68,30 @@
         }
         #slider .arrow.hide {
             display: none;
+        }
+        #slider #navigation {
+            list-style: none;
+            position: absolute;
+            bottom: 10px;
+            width: 100%;
+            height: 10px;
+            padding: 0 25%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+        }
+        #slider #navigation li {
+            width: 100%;
+            height: 100%;
+            border: 1px solid #fff;
+            border-radius: 5px;
+            opacity: .7;
+            overflow: hidden;
+            cursor: pointer;
+        }
+        #slider #navigation li.active {
+            background: #fff;
         }
         #slider #slideWrap .slide:nth-child(1) {
             background: red;
@@ -107,12 +131,48 @@
         <i id="right" class="arrow">
             <span class="material-symbols-outlined">shift_lock</span>
         </i>
+        <ul id="navigation"></ul>
     </div>
 </body>
 <script>
     const slideWrap = document.querySelector("#slider #slideWrap")
+    const getNowLeft = () => parseInt(getComputedStyle(slideWrap).left)
     const setLeft = left => slideWrap.style.left = left + "px"
     const slideWidth = parseInt(getComputedStyle(document.querySelector("#slider .slide")).width)
+    const transitionEnable = (type) => slideWrap.classList[type ? "remove" : "add"]("disableTransition")
+
+    const autoSlide = true
+    const autoSlideTime = 2000
+    const autoSlideFunction = () => document.querySelector("#slider .arrow#right").click()
+    let autoSlideInterval
+    const setAutoSlide = (type = true) => {
+        if(!autoSlide) return
+        else if(type && !autoSlideInterval) autoSlideInterval = setInterval(autoSlideFunction, autoSlideTime)
+        else if(!type) {
+            clearInterval(autoSlideInterval)
+            autoSlideInterval = null
+        }
+    }
+    setAutoSlide(true)
+
+    const showNavigation = true
+    if(showNavigation)
+    document.querySelectorAll("#slider #slideWrap .slide").forEach(element => {
+        const li = document.createElement("li")
+        li.addEventListener("click", () => {
+            setAutoSlide(false)
+            transitionEnable(true)
+            setLeft(-element.offsetLeft)
+            setAutoSlide(true)
+        })
+        document.querySelector("#slider #navigation").insertAdjacentElement("beforeend", li)
+    })
+    const setNavigationActive = () => {
+        if(!showNavigation) return
+        const _index = Math.abs(getNowLeft() / slideWidth) - (infiniteSlide ? 1 : 0)
+        document.querySelectorAll("#slider #navigation li").forEach((element, index) => 
+        element.classList[index == _index ? "add" : "remove"]("active"))
+    }
 
     const infiniteSlide = true
     if(infiniteSlide) {
@@ -127,8 +187,6 @@
     const maxSlideWidth = -slideWidth * (slideLength - 1)
     const minSlideWidth = 0
     
-    const getNowLeft = () => parseInt(getComputedStyle(slideWrap).left)
-
     const setArrowDisplay = () => {
         if(infiniteSlide) return
         const nowLeft = getNowLeft()
@@ -139,7 +197,6 @@
 
     setArrowDisplay()
 
-    const transitionEnable = (type) => slideWrap.classList[type ? "remove" : "add"]("zeroTran")
     const slideMove = (left = false) => {
         const nowLeft = getNowLeft()
         const nowLeftCorrection = Math.round(nowLeft / slideWidth) * slideWidth
@@ -149,8 +206,6 @@
         else if(!left && nowLeft >= minSlideWidth) setLeft(minSlideWidth) // 왼쪽 끝
     }
 
-    const setLeftCorrection = () => setLeft(Math.round(getNowLeft() / slideWidth) * slideWidth)
-
     let isNowMoving = false
     document.querySelectorAll("#slider .arrow").forEach(element => {
         element.addEventListener("click", () => {
@@ -158,8 +213,6 @@
             isNowMoving = true
             transitionEnable(true)
             slideMove(element.id == "right")
-            
-            // setLeftCorrection() // 화살표로 슬라이드 넘길 시 가끔 애매한 구역에 멈추는 경우 발생함.
         })
         
         slideWrap.addEventListener("transitionend", () => {
@@ -167,21 +220,22 @@
                 const nowLeft = getNowLeft()
                 const normalFirstSlideLeft = minSlideWidth - slideWidth
                 const normalLastSlideLeft = maxSlideWidth + slideWidth
-                transitionEnable(true)
+                transitionEnable(false)
                 if(nowLeft == maxSlideWidth) setLeft(normalFirstSlideLeft)
                 else if(nowLeft == minSlideWidth) setLeft(normalLastSlideLeft)
-                transitionEnable(false)
             }
 
+            setNavigationActive()
             setArrowDisplay()
             isNowMoving = false
         })
     })
 
-    slider.addEventListener("mousedown", (e) => {
+    slideWrap.addEventListener("mousedown", (e) => {
         const nowLeft = getNowLeft()
         slider.style.cursor = "grabbing";
         transitionEnable(false)
+        setAutoSlide(false)
 
         const mouseMoveEvent = event => setLeft(nowLeft - (e.x - event.x))
         document.addEventListener("mousemove", mouseMoveEvent);
@@ -194,13 +248,12 @@
             setLeft(nowLeft)
             if(Math.abs(mouseMoveValue) > mouseMoveValueCorrection) slideMove(mouseMoveValue > 0)
 
+            setAutoSlide(true)
+            
             slider.style.cursor = "grab";
 
             document.removeEventListener("mousemove", mouseMoveEvent)
         })
     })
-    
-    const autoSlide = true
-    if(autoSlide) setInterval(() => document.querySelector("#slider .arrow#right").click(), 2000)
 </script>
 </html>
