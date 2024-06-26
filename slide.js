@@ -1,27 +1,3 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>메인 페이지</title>
-
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        body {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-        }
-    </style>
-</head>
-<body id="body">
-</body>
-<script>
     const slideCustom = (slideItemArray, insertElementId, option) => {
         
         const optionDefault = {
@@ -291,30 +267,3 @@
     })
 
     }
-
-    slideCustom([
-    "sample image 1.jpg",
-    "sample image 2.jpg",
-    "sample image 3.jpg",
-    "sample image 4.jpg",
-    "sample image 5.jpg",
-    ], "body", {
-        width: 625,
-        height: 350,
-    })
-    slideCustom([
-    "sample image 6.jpg",
-    "sample image 7.jpg",
-    "sample image 8.jpg",
-    ], "body", {
-        autoSlide: true,
-        showNavigation: false,
-        infiniteSlide: true,
-        arrowDisplay: false,
-        showPlayStop: false,
-        imageFullWidth: false,
-        width: 625,
-        height: 350,
-    })
-</script>
-</html>
