@@ -7,9 +7,10 @@
             infiniteSlide: true,
             arrowDisplay: true,
             showPlayStop: true,
-            width: 450,
-            height: 250,
-            imageFullWidth: true
+            width: "100%",
+            height: "400px",
+            imageFullWidth: true,
+            itemTitleArray: []
         }
         option = {
             ...optionDefault,
@@ -20,7 +21,12 @@
         document.querySelector(`#${insertElementId}`).insertAdjacentHTML("afterbegin", `
         <div id="${slideCustomId}">
             <ul data-id="slideWrap" style="left: 0;">
-            ${slideItemArray.map(item => `<li class="slide"><img src="${item}" title="slide image"></li>`).join("")}
+            ${slideItemArray.map((item, index) => `
+                <li class="slide">
+                    ${/^</.test(item) ? item : `<img src="${item}" title="slide image">`}
+                    ${option.itemTitleArray[index] ? `<div data-id="title">${option.itemTitleArray[index]}</div>` : ``}
+                </li>
+            `).join("")}
             </ul>
             <i data-id="left" class="arrow">
                 <span class="material-symbols-outlined">
@@ -68,8 +74,8 @@
             cursor: grab;
         }
         #${slideCustomId} [data-id="slideWrap"] {
-            width: ${option.width}px;
-            height: ${option.height}px;
+            width: ${/[0-9]$/.test(option.width) ? option.width + "px" : option.width};
+            height: ${/[0-9]$/.test(option.height) ? option.height + "px" : option.height};
 
             list-style: none;
             position: relative;
@@ -85,10 +91,27 @@
             justify-content: center;
             align-items: center;
             background: #fff;
+            position: relative;
         }
         #${slideCustomId} [data-id="slideWrap"] .slide img {
             ${option.imageFullWidth ? "width: 100%;" : "height: 100%;"}
         }
+        #${slideCustomId} [data-id="slideWrap"] .slide [data-id="title"] {
+            position: absolute;
+            left: 0;
+            bottom: 0;
+            background: #50505055;
+            width: 100%;
+            height: 0;
+            transition: .3s;
+            color: #fff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            z-index: 1;
+        }
+        #${slideCustomId} [data-id="slideWrap"] .slide:hover [data-id="title"] {height: 20%;}
         #${slideCustomId} .arrow {
             position: absolute;
             z-index: 1;
@@ -134,14 +157,20 @@
         }
         #${slideCustomId} .playAndStop i.hide {display: none;}
     </style>`)
+
+    // window.addEventListener("load", createSlider)
+    // window.addEventListener("resize", createSlider)
+
+    // function createSlider() {
     
     const slider = document.querySelector(`#${slideCustomId}`)
     const slideWrap = slider.querySelector(`[data-id="slideWrap"]`)
     const navigation = slider.querySelector(`[data-id="navigation"]`)
     const getNowLeft = () => parseInt(getComputedStyle(slideWrap).left)
     const setLeft = left => slideWrap.style.left = left + "px"
-    const slideWidth = parseInt(getComputedStyle(slideWrap.querySelector(`.slide`)).width)
     const transitionEnable = (type) => slideWrap.classList[type ? "remove" : "add"]("disableTransition")
+    // const slideWidth = parseInt(getComputedStyle(slideWrap.querySelector(`.slide`)).width)
+    const getSlideWidth = () => parseInt(getComputedStyle(slideWrap.querySelector(`.slide`)).width)
 
     const autoSlide = option.autoSlide
     const autoSlideTime = option.autoSlideTime
@@ -171,6 +200,9 @@
     })
     const setNavigationActive = () => {
         if(!showNavigation) return
+        
+        const slideWidth = getSlideWidth()
+        
         const _index = Math.abs(getNowLeft() / slideWidth) - (infiniteSlide ? 1 : 0)
         navigation.querySelectorAll(`li`).forEach((element, index) => 
         element.classList[index == _index ? "add" : "remove"]("active"))
@@ -178,21 +210,27 @@
 
     const infiniteSlide = option.infiniteSlide
     if(infiniteSlide) {
+        
+        const slideWidth = getSlideWidth()
+        
         const firstSlide = slideWrap.querySelector(`.slide`).cloneNode(true)
         const lastSlide = slideWrap.querySelector(`.slide:last-child`).cloneNode(true)
         slideWrap.insertAdjacentElement("beforeend", firstSlide)
         slideWrap.insertAdjacentElement("afterbegin", lastSlide)
         setLeft(-slideWidth)
     }
-
-    const slideLength = slideWrap.querySelectorAll(`.slide`).length
-    const maxSlideWidth = -slideWidth * (slideLength - 1)
-    const minSlideWidth = 0
     
+    const slideLength = slideWrap.querySelectorAll(`.slide`).length
+    // const maxSlideWidth = -slideWidth * (slideLength - 1)
+    const getMaxSlideWidth = () => -getSlideWidth() * (slideLength - 1)
+    const minSlideWidth = 0
+
     const setArrowDisplay = () => {
         if(infiniteSlide) return
 
         const nowLeft = getNowLeft()
+        const maxSlideWidth = getMaxSlideWidth()
+        
         slider.querySelectorAll(`.arrow`).forEach(element => element.classList.remove("hide"))
         if(nowLeft == maxSlideWidth) slider.querySelector(`.arrow[data-id="right"]`).classList.add("hide")
         if(nowLeft == minSlideWidth) slider.querySelector(`.arrow[data-id="left"]`).classList.add("hide")
@@ -201,6 +239,10 @@
     setArrowDisplay()
 
     const slideMove = (left = false, nowLeftValue) => {
+
+        const slideWidth = getSlideWidth()
+        const maxSlideWidth = getMaxSlideWidth()
+
         const nowLeft = nowLeftValue || getNowLeft()
         const nowLeftCorrection = Math.round(nowLeft / slideWidth) * slideWidth
 
@@ -220,9 +262,13 @@
         
         slideWrap.addEventListener("transitionend", () => {
             if(infiniteSlide) {
+                const slideWidth = getSlideWidth()
+                const maxSlideWidth = getMaxSlideWidth()
+
                 const nowLeft = getNowLeft()
                 const normalFirstSlideLeft = minSlideWidth - slideWidth
                 const normalLastSlideLeft = maxSlideWidth + slideWidth
+
                 transitionEnable(false)
                 if(nowLeft == maxSlideWidth) setLeft(normalFirstSlideLeft)
                 else if(nowLeft == minSlideWidth) setLeft(normalLastSlideLeft)
